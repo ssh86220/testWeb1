@@ -1,0 +1,57 @@
+      /* 상품 통계 등록  (BatchGoodsMapper.insertGoodsStatistics) */
+        
+        INSERT INTO TRENSHOW_HISTORY.T_GOODS_STATISTICS
+	    
+	    SELECT 
+	    	REG_DT,
+	    	SUM(GOODS_REG_CNT) AS GOODS_REG_CNT,
+	    	SUM(TOT_GOODS_REG_CNT) AS TOT_GOODS_REG_CNT,
+	    	SUM(TOT_GOODS_LIVE_CNT) AS TOT_GOODS_LIVE_CNT,
+	    	SUM(TOT_GOODS_DEL_CNT) AS TOT_GOODS_DEL_CNT,
+	    	CURRENT_TIMESTAMP
+	    FROM 
+		(
+		
+			SELECT 
+				STR_TO_DATE(SD.selected_date, '%Y-%m-%d') REG_DT,
+				COUNT(GOODS_SEQ) AS GOODS_REG_CNT,
+				0 AS TOT_GOODS_REG_CNT,
+				0 AS TOT_GOODS_LIVE_CNT,
+				0 AS TOT_GOODS_DEL_CNT
+			FROM 
+				(select selected_date from 
+				(select adddate('1970-01-01',t4.i*10000 + t3.i*1000 + t2.i*100 + t1.i*10 + t0.i) selected_date from
+				(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t0,
+				(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t1,
+				(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t2,
+				(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t3,
+				(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t4) v
+				where selected_date = CURDATE() - INTERVAL 1 DAY  ) SD
+				
+		        LEFT OUTER JOIN TRENSHOW.T_GOODS G ON SD.selected_date = STR_TO_DATE(G.REG_DATE, '%Y-%m-%d') 
+		      	GROUP BY STR_TO_DATE(SD.selected_date, '%Y-%m-%d') WITH ROLLUP
+	       
+		UNION ALL 
+	      
+			SELECT 
+				STR_TO_DATE(SD.selected_date, '%Y-%m-%d') REG_DT,
+				0 AS GOODS_REG_CNT,
+				COUNT(GOODS_SEQ) AS TOT_GOODS_REG_CNT,
+				SUM(case when G.LIVE_YN = 1 then 1 else 0 end) AS TOT_GOODS_LIVE_CNT,
+				SUM(case when G.DEL_YN = 1 then 1 else 0 end) AS TOT_GOODS_DEL_CNT
+			FROM 
+		        (select selected_date from 
+				(select adddate('1970-01-01',t4.i*10000 + t3.i*1000 + t2.i*100 + t1.i*10 + t0.i) selected_date from
+				(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t0,
+				(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t1,
+				(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t2,
+				(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t3,
+				(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t4) v
+				 where selected_date = CURDATE() - INTERVAL 1 DAY  ) SD
+				
+				LEFT OUTER JOIN TRENSHOW.T_GOODS G ON SD.selected_date <![CDATA[ >= ]]> STR_TO_DATE(G.REG_DATE, '%Y-%m-%d') 
+				GROUP BY STR_TO_DATE(SD.selected_date, '%Y-%m-%d') WITH ROLLUP
+	       
+       ) XX
+	   WHERE REG_DT IS NOT NULL
+	   GROUP BY REG_DT

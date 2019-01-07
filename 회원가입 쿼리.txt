@@ -1,0 +1,123 @@
+    SELECT 
+       REG_DT,
+       SUM(S_MEM_CNT) AS S_MEM_CNT,
+       SUM(S_WITHDRAWAL_CNT) AS S_WITHDRAWAL_CNT,
+       S_TOT_JOIN_CNT,
+       S_TOT_LEAVE_CNT,   
+       
+       SUM(B_MEM_CNT) AS B_MEM_CNT,
+       SUM(B_WITHDRAWAL_CNT) AS B_WITHDRAWAL_CNT,
+       B_TOT_JOIN_CNT,
+       B_TOT_LEAVE_CNT  
+       
+      FROM
+      
+      
+      (
+      
+      SELECT 
+       REG_DT,
+       GUBUN,
+       CASE WHEN TYPE = 'SELLER' THEN MEM_CNT ELSE 0 END AS S_MEM_CNT,
+       CASE WHEN TYPE = 'SELLER' THEN WITHDRAWAL_CNT ELSE 0 END AS S_WITHDRAWAL_CNT,
+       CASE WHEN TYPE = 'SELLER' THEN TOT_JOIN_CNT ELSE 0 END AS S_TOT_JOIN_CNT,
+       CASE WHEN TYPE = 'SELLER' THEN TOT_LEAVE_CNT ELSE 0 END AS S_TOT_LEAVE_CNT,                 
+      
+       CASE WHEN TYPE = 'BUYER' THEN MEM_CNT ELSE 0 END AS B_MEM_CNT,
+       CASE WHEN TYPE = 'BUYER' THEN WITHDRAWAL_CNT ELSE 0 END AS B_WITHDRAWAL_CNT,
+       CASE WHEN TYPE = 'BUYER' THEN TOT_JOIN_CNT ELSE 0 END AS B_TOT_JOIN_CNT,
+       CASE WHEN TYPE = 'BUYER' THEN TOT_LEAVE_CNT ELSE 0 END AS B_TOT_LEAVE_CNT
+      
+      
+     FROM (  
+      
+      SELECT 
+       *
+       FROM (                 
+       SELECT STR_TO_DATE(SD.selected_date, '%Y-%m-%d') REG_DT, IFNULL(XC.MCO_TYPE, 'SB') AS TYPE , COUNT(X.MEM_ID) MEM_CNT, 0 AS WITHDRAWAL_CNT,
+        0 AS TOT_JOIN_CNT, 0 TOT_LEAVE_CNT, 'M' AS GUBUN
+       FROM 
+           (select selected_date from 
+    			(select adddate('1970-01-01',t4.i*10000 + t3.i*1000 + t2.i*100 + t1.i*10 + t0.i) selected_date from
+    			(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t0,
+    			(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t1,
+    			(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t2,
+    			(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t3,
+    			(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t4) v
+    		  where selected_date between '2018-12-01' and NOW() ) SD
+        
+       LEFT OUTER JOIN  TRENSHOW_MEMBER.T_MEMBER X ON SD.selected_date = STR_TO_DATE(X.REG_DATE, '%Y-%m-%d') 
+       LEFT OUTER JOIN TRENSHOW_MEMBER.T_MEMBER_COMPANY XC ON X.MCO_SEQ = XC.MCO_SEQ
+       
+       GROUP BY STR_TO_DATE(SD.selected_date, '%Y-%m-%d') , XC.MCO_TYPE WITH ROLLUP
+     
+       UNION ALL
+       
+       SELECT STR_TO_DATE(SD.selected_date, '%Y-%m-%d') REG_DT, IFNULL(XC.MCO_TYPE, 'SB') AS TYPE , 0 AS MEM_CNT, COUNT(X.MEM_ID) WITHDRAWAL_CNT,
+       0 AS TOT_JOIN_CNT, 0 TOT_LEAVE_CNT, 'L' AS GUBUN
+       FROM 
+           (select selected_date from 
+    			(select adddate('1970-01-01',t4.i*10000 + t3.i*1000 + t2.i*100 + t1.i*10 + t0.i) selected_date from
+    			(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t0,
+    			(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t1,
+    			(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t2,
+    			(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t3,
+    			(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t4) v
+    		  where selected_date between '2018-12-01' and CURDATE()  ) SD
+       
+       
+       LEFT OUTER JOIN TRENSHOW_MEMBER.T_MEMBER_COMPANY XC ON SD.selected_date = STR_TO_DATE(XC.WITHDRAWAL_DATE, '%Y-%m-%d') 
+       LEFT OUTER JOIN  TRENSHOW_MEMBER.T_MEMBER X ON X.MCO_SEQ = XC.MCO_SEQ
+       GROUP BY STR_TO_DATE(SD.selected_date, '%Y-%m-%d') , XC.MCO_TYPE WITH ROLLUP
+       
+       UNION ALL
+       
+       
+       SELECT STR_TO_DATE(SD.selected_date, '%Y-%m-%d') REG_DT, IFNULL(XC.MCO_TYPE, 'SB') AS TYPE , 0 AS MEM_CNT, 0 WITHDRAWAL_CNT,
+       COUNT(X.MEM_ID) AS TOT_JOIN_CNT, COUNT( CASE WHEN XC.WITHDRAWAL_DATE IS NOT NULL THEN 1 ELSE 0 END ) TOT_LEAVE_CNT, 'V' AS GUBUN
+       FROM 
+           (select selected_date from 
+    			(select adddate('1970-01-01',t4.i*10000 + t3.i*1000 + t2.i*100 + t1.i*10 + t0.i) selected_date from
+    			(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t0,
+    			(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t1,
+    			(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t2,
+    			(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t3,
+    			(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t4) v
+    		  where selected_date between '2018-12-01' and CURDATE()  ) SD
+       
+       
+         
+       LEFT OUTER JOIN  TRENSHOW_MEMBER.T_MEMBER X ON SD.selected_date >= STR_TO_DATE(X.REG_DATE, '%Y-%m-%d') 
+       LEFT OUTER JOIN TRENSHOW_MEMBER.T_MEMBER_COMPANY XC ON X.MCO_SEQ = XC.MCO_SEQ
+       GROUP BY STR_TO_DATE(SD.selected_date, '%Y-%m-%d') , XC.MCO_TYPE WITH ROLLUP
+       
+       
+       
+       
+       ) XX
+       ORDER BY XX.REG_DT
+       
+       ) XXX
+       
+       
+       GROUP BY XXX.REG_DT, XXX.TYPE
+      
+       
+      )XXX
+        GROUP BY XXX.REG_DT
+        ORDER BY XXX.REG_DT DESC
+       ;
+       
+	   
+     
+     
+       REG_DT,
+       CASE WHEN TYPE = 'SELLER' THEN MEM_CNT ELSE 0 END AS S_MEM_CNT,
+       CASE WHEN TYPE = 'SELLER' THEN WITHDRAWAL_CNT ELSE 0 END AS S_WITHDRAWAL_CNT,
+       CASE WHEN TYPE = 'SELLER' THEN TOT_JOIN_CNT ELSE 0 END AS S_TOT_JOIN_CNT,
+       CASE WHEN TYPE = 'SELLER' THEN TOT_LEAVE_CNT ELSE 0 END AS S_TOT_LEAVE_CNT,                 
+      
+       CASE WHEN TYPE = 'BUYER' THEN MEM_CNT ELSE 0 END AS B_MEM_CNT,
+       CASE WHEN TYPE = 'BUYER' THEN WITHDRAWAL_CNT ELSE 0 END AS B_WITHDRAWAL_CNT,
+       CASE WHEN TYPE = 'BUYER' THEN TOT_JOIN_CNT ELSE 0 END AS B_TOT_JOIN_CNT,
+       CASE WHEN TYPE = 'BUYER' THEN TOT_LEAVE_CNT ELSE 0 END AS B_TOT_LEAVE_CNT
